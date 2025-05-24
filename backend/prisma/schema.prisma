@@ -1,0 +1,66 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  username String    @unique
+  password String
+  email    String    @unique
+  role     String    @default("user")
+  reviews  Review[]
+  comments Comment[]
+}
+
+model Game {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String    @unique
+  description   String?
+  genre         String?
+  platform      String?
+  publisher     String?
+  gameMode      String?   @map("game_mode")
+  theme         String?
+  releaseDate   DateTime? @map("release_date")
+  averageRating Decimal?  @map("average_rating") @db.Decimal(3, 1)
+  imageUrl      String?   @map("image_url")
+  reviews       Review[]
+
+  @@map("games")
+}
+
+model Review {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  content   String
+  rating    Int
+  userId    String    @map("user_id") @db.Uuid
+  gameId    String    @map("game_id") @db.Uuid
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  user      User      @relation(fields: [userId], references: [id])
+  game      Game      @relation(fields: [gameId], references: [id])
+  comments  Comment[]
+
+  @@index([createdAt])
+  @@unique([userId, gameId])
+  @@map("reviews")
+}
+
+model Comment {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  content   String
+  userId    String   @map("user_id") @db.Uuid
+  reviewId  String   @map("review_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id])
+  review    Review   @relation(fields: [reviewId], references: [id])
+
+  @@index([createdAt])
+  @@map("comments")
+}

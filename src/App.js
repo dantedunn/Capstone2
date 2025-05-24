@@ -1,9 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import NavigationBar from './components/NavigationBar';
 import GameList from './components/GameList';
 import GameDetail from './components/GameDetail';
 import ReviewForm from './components/ReviewForm';
+import Login from './components/Login';
+import SignUp from './components/SignUp';
+import PrivateRoute from './components/PrivateRoute';
 import { fetchGameData } from './api/api';
+import './styles/App.css';
 
 function App() {
     const [games, setGames] = useState([]);
@@ -17,17 +23,20 @@ function App() {
     }, []);
 
     return (
-        <Router>
-            <div className="App">
-                <Switch>
-                    <Route path="/" exact>
-                        <GameList games={games} />
-                    </Route>
-                    <Route path="/game/:id" component={GameDetail} />
-                    <Route path="/review" component={ReviewForm} />
-                </Switch>
-            </div>
-        </Router>
+        <AuthProvider>
+            <Router>
+                <div className="App">
+                    <NavigationBar />
+                    <Switch>
+                        <Route exact path="/" component={GameList} />
+                        <Route path="/login" component={Login} />
+                        <Route path="/signup" component={SignUp} />
+                        <Route path="/game/:id" component={GameDetail} />
+                        <Route path="/review" component={ReviewForm} />
+                    </Switch>
+                </div>
+            </Router>
+        </AuthProvider>
     );
 }
 

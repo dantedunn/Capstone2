@@ -2,22 +2,31 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const bodyParser = require('body-parser');
-const { Pool } = require('pg');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
+const { PrismaClient } = require('@prisma/client');
 require('dotenv').config();
 
 const app = express();
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 5001;
+const prisma = new PrismaClient();
 
-// DB connection
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
-
-app.use(cors());
+// Configure CORS
+app.use(cors({
+  origin: true, // Allow all origins in development
+  credentials: true
+}));
 app.use(morgan('dev'));
 app.use(bodyParser.json());
+
+// Add error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({
+    error: 'Internal Server Error',
+    message: err.message
+  });
+});
 
 // JWT secret
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -44,13 +53,22 @@ function requireAdmin(req, res, next) {
 app.post('/api/auth/signup', async (req, res) => {
   const { username, email, password } = req.body;
   if (!username || !email || !password) return res.status(400).json({ error: 'Missing fields' });
-  const hash = await bcrypt.hash(password, 10);
   try {
-    const result = await pool.query(
-      'INSERT INTO users (id, username, password, email, role) VALUES (gen_random_uuid(), $1, $2, $3, $4) RETURNING id, username, email, role',
-      [username, hash, email, 'user']
-    );
-    const user = result.rows[0];
+    const hash = await bcrypt.hash(password, 10);
+    const user = await prisma.user.create({
+      data: {
+        username,
+        email,
+        password: hash,
+        role: 'user'
+      },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        role: true
+      }
+    });
     const token = jwt.sign(user, JWT_SECRET);
     res.json({ token, user });
   } catch (e) {
@@ -60,173 +78,390 @@ app.post('/api/auth/signup', async (req, res) => {
 
 app.post('/api/auth/login', async (req, res) => {
   const { username, password } = req.body;
-  const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
-  const user = result.rows[0];
+  const user = await prisma.user.findUnique({
+    where: { username }
+  });
   if (!user) return res.status(401).json({ error: 'Invalid credentials' });
   const valid = await bcrypt.compare(password, user.password);
   if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
-  const token = jwt.sign({ id: user.id, username: user.username, role: user.role, email: user.email }, JWT_SECRET);
-  res.json({ token, user: { id: user.id, username: user.username, role: user.role, email: user.email } });
+  const userData = {
+    id: user.id,
+    username: user.username,
+    role: user.role,
+    email: user.email
+  };
+  const token = jwt.sign(userData, JWT_SECRET);
+  res.json({ token, user: userData });
 });
 
 // Games routes
 app.get('/api/games', async (req, res) => {
-  const result = await pool.query('SELECT * FROM games ORDER BY name');
-  res.json(result.rows);
+  const games = await prisma.game.findMany({
+    orderBy: { name: 'asc' }
+  });
+  res.json(games);
 });
 
 app.get('/api/games/:id', async (req, res) => {
   const { id } = req.params;
-  const result = await pool.query('SELECT * FROM games WHERE id = $1', [id]);
-  if (result.rows.length === 0) return res.sendStatus(404);
-  res.json(result.rows[0]);
+  const game = await prisma.game.findUnique({
+    where: { id }
+  });
+  if (!game) return res.sendStatus(404);
+  res.json(game);
 });
 
 app.get('/api/games/search', async (req, res) => {
   const { q } = req.query;
-  const result = await pool.query('SELECT * FROM games WHERE LOWER(name) LIKE $1', [`%${q.toLowerCase()}%`]);
-  res.json(result.rows);
+  const games = await prisma.game.findMany({
+    where: {
+      name: {
+        contains: q.toLowerCase(),
+        mode: 'insensitive'
+      }
+    }
+  });
+  res.json(games);
 });
 
 app.post('/api/games', authenticateToken, requireAdmin, async (req, res) => {
   const { name, description, genre, platform, publisher, game_mode, theme, release_date, average_rating, image_url } = req.body;
-  const result = await pool.query(
-    'INSERT INTO games (id, name, description, genre, platform, publisher, game_mode, theme, release_date, average_rating, image_url) VALUES (gen_random_uuid(), $1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *',
-    [name, description, genre, platform, publisher, game_mode, theme, release_date, average_rating, image_url]
-  );
-  res.json(result.rows[0]);
+  const game = await prisma.game.create({
+    data: {
+      name,
+      description,
+      genre,
+      platform,
+      publisher,
+      game_mode,
+      theme,
+      release_date: release_date ? new Date(release_date) : null,
+      average_rating,
+      image_url
+    }
+  });
+  res.json(game);
 });
 
 app.put('/api/games/:id', authenticateToken, requireAdmin, async (req, res) => {
   const { id } = req.params;
   const { name, description, genre, platform, publisher, game_mode, theme, release_date, average_rating, image_url } = req.body;
-  const result = await pool.query(
-    'UPDATE games SET name=$1, description=$2, genre=$3, platform=$4, publisher=$5, game_mode=$6, theme=$7, release_date=$8, average_rating=$9, image_url=$10 WHERE id=$11 RETURNING *',
-    [name, description, genre, platform, publisher, game_mode, theme, release_date, average_rating, image_url, id]
-  );
-  if (result.rows.length === 0) return res.sendStatus(404);
-  res.json(result.rows[0]);
+  const game = await prisma.game.update({
+    where: { id },
+    data: {
+      name,
+      description,
+      genre,
+      platform,
+      publisher,
+      game_mode,
+      theme,
+      release_date: release_date ? new Date(release_date) : null,
+      average_rating,
+      image_url
+    }
+  });
+  res.json(game);
 });
 
 app.delete('/api/games/:id', authenticateToken, requireAdmin, async (req, res) => {
   const { id } = req.params;
-  await pool.query('DELETE FROM games WHERE id = $1', [id]);
+  await prisma.game.delete({
+    where: { id }
+  });
   res.sendStatus(204);
 });
 
 // Reviews endpoints
 app.get('/api/reviews', authenticateToken, async (req, res) => {
-  // Get all reviews by the logged-in user
-  const result = await pool.query('SELECT * FROM reviews WHERE user_id = $1', [req.user.id]);
-  res.json(result.rows);
+  const reviews = await prisma.review.findMany({
+    where: { userId: req.user.id },
+    include: {
+      game: true,
+      comments: {
+        include: {
+          user: {
+            select: {
+              username: true
+            }
+          }
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      }
+    },
+    orderBy: {
+      createdAt: 'desc'
+    }
+  });
+  res.json(reviews);
 });
 
 app.get('/api/games/:id/reviews', async (req, res) => {
-  // Get all reviews for a specific game
   const { id } = req.params;
-  const result = await pool.query(
-    'SELECT r.*, u.username FROM reviews r JOIN users u ON r.user_id = u.id WHERE r.game_id = $1',
-    [id]
-  );
-  res.json(result.rows);
+  const reviews = await prisma.review.findMany({
+    where: { gameId: id },
+    include: {
+      user: {
+        select: {
+          username: true
+        }
+      },
+      comments: {
+        include: {
+          user: {
+            select: {
+              username: true
+            }
+          }
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      }
+    },
+    orderBy: {
+      createdAt: 'desc'
+    }
+  });
+  res.json(reviews);
 });
 
 app.post('/api/games/:id/reviews', authenticateToken, async (req, res) => {
-  // Add a review for a game (one per user per game)
   const { id } = req.params;
   const { content, rating } = req.body;
   try {
-    const result = await pool.query(
-      'INSERT INTO reviews (id, content, rating, user_id, game_id) VALUES (gen_random_uuid(), $1, $2, $3, $4) RETURNING *',
-      [content, rating, req.user.id, id]
-    );
-    res.json(result.rows[0]);
+    const review = await prisma.review.create({
+      data: {
+        content,
+        rating,
+        userId: req.user.id,
+        gameId: id
+      },
+      include: {
+        user: {
+          select: {
+            username: true
+          }
+        }
+      }
+    });
+    res.json(review);
   } catch (e) {
-    res.status(400).json({ error: 'You have already reviewed this game.' });
+    res.status(400).json({ error: 'You have already reviewed this game' });
   }
 });
 
 app.put('/api/reviews/:id', authenticateToken, async (req, res) => {
-  // Edit a review (only by owner)
   const { id } = req.params;
   const { content, rating } = req.body;
-  const result = await pool.query(
-    'UPDATE reviews SET content = $1, rating = $2 WHERE id = $3 AND user_id = $4 RETURNING *',
-    [content, rating, id, req.user.id]
-  );
-  if (result.rows.length === 0) return res.sendStatus(403);
-  res.json(result.rows[0]);
+  try {
+    const review = await prisma.review.update({
+      where: {
+        id_userId: {
+          id,
+          userId: req.user.id
+        }
+      },
+      data: {
+        content,
+        rating
+      }
+    });
+    res.json(review);
+  } catch (e) {
+    res.sendStatus(403);
+  }
 });
 
 app.delete('/api/reviews/:id', authenticateToken, async (req, res) => {
-  // Delete a review (only by owner)
   const { id } = req.params;
-  const result = await pool.query('DELETE FROM reviews WHERE id = $1 AND user_id = $2 RETURNING *', [id, req.user.id]);
-  if (result.rows.length === 0) return res.sendStatus(403);
-  res.sendStatus(204);
+  try {
+    await prisma.review.delete({
+      where: {
+        id_userId: {
+          id,
+          userId: req.user.id
+        }
+      }
+    });
+    res.sendStatus(204);
+  } catch (e) {
+    res.sendStatus(403);
+  }
 });
 
 // Comments endpoints
-app.get('/api/comments', authenticateToken, async (req, res) => {
-  // Get all comments by the logged-in user
-  const result = await pool.query('SELECT * FROM comments WHERE user_id = $1', [req.user.id]);
-  res.json(result.rows);
+app.get('/api/reviews/:reviewId/comments', async (req, res) => {
+  const { reviewId } = req.params;
+  const comments = await prisma.comment.findMany({
+    where: { reviewId },
+    include: {
+      user: {
+        select: {
+          username: true
+        }
+      }
+    },
+    orderBy: {
+      id: 'desc'
+    }
+  });
+  res.json(comments);
 });
 
-app.get('/api/reviews/:id/comments', async (req, res) => {
-  // Get all comments for a specific review
-  const { id } = req.params;
-  const result = await pool.query(
-    'SELECT c.*, u.username FROM comments c JOIN users u ON c.user_id = u.id WHERE c.review_id = $1',
-    [id]
-  );
-  res.json(result.rows);
-});
-
-app.post('/api/reviews/:id/comments', authenticateToken, async (req, res) => {
-  // Add a comment to a review
-  const { id } = req.params;
+app.post('/api/reviews/:reviewId/comments', authenticateToken, async (req, res) => {
+  const { reviewId } = req.params;
   const { content } = req.body;
-  const result = await pool.query(
-    'INSERT INTO comments (id, content, user_id, review_id) VALUES (gen_random_uuid(), $1, $2, $3) RETURNING *',
-    [content, req.user.id, id]
-  );
-  res.json(result.rows[0]);
+  const comment = await prisma.comment.create({
+    data: {
+      content,
+      userId: req.user.id,
+      reviewId
+    },
+    include: {
+      user: {
+        select: {
+          username: true
+        }
+      }
+    }
+  });
+  res.json(comment);
 });
 
 app.put('/api/comments/:id', authenticateToken, async (req, res) => {
-  // Edit a comment (only by owner)
   const { id } = req.params;
   const { content } = req.body;
-  const result = await pool.query(
-    'UPDATE comments SET content = $1 WHERE id = $2 AND user_id = $3 RETURNING *',
-    [content, id, req.user.id]
-  );
-  if (result.rows.length === 0) return res.sendStatus(403);
-  res.json(result.rows[0]);
+  try {
+    const comment = await prisma.comment.update({
+      where: {
+        id,
+        userId: req.user.id
+      },
+      data: { content },
+      include: {
+        user: {
+          select: {
+            username: true
+          }
+        }
+      }
+    });
+    res.json(comment);
+  } catch (e) {
+    res.sendStatus(403);
+  }
 });
 
 app.delete('/api/comments/:id', authenticateToken, async (req, res) => {
-  // Delete a comment (only by owner)
   const { id } = req.params;
-  const result = await pool.query('DELETE FROM comments WHERE id = $1 AND user_id = $2 RETURNING *', [id, req.user.id]);
-  if (result.rows.length === 0) return res.sendStatus(403);
-  res.sendStatus(204);
+  try {
+    await prisma.comment.delete({
+      where: {
+        id,
+        userId: req.user.id
+      }
+    });
+    res.sendStatus(204);
+  } catch (e) {
+    res.sendStatus(403);
+  }
 });
 
 // Admin endpoints
-app.get('/api/users', authenticateToken, requireAdmin, async (req, res) => {
-  // List all users with role, email, and review count
-  const result = await pool.query(`
-    SELECT u.id, u.username, u.email, u.role, COUNT(r.id) AS review_count
-    FROM users u
-    LEFT JOIN reviews r ON u.id = r.user_id
-    GROUP BY u.id
-    ORDER BY u.username
-  `);
-  res.json(result.rows);
+app.get('/api/admin/users', authenticateToken, requireAdmin, async (req, res) => {
+  const users = await prisma.user.findMany({
+    select: {
+      id: true,
+      username: true,
+      email: true,
+      role: true,
+      reviews: {
+        select: {
+          id: true
+        }
+      }
+    }
+  });
+  res.json(users);
 });
 
-app.listen(port, () => {
+app.put('/api/admin/users/:id', authenticateToken, requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { role } = req.body;
+  const user = await prisma.user.update({
+    where: { id },
+    data: { role },
+    select: {
+      id: true,
+      username: true,
+      email: true,
+      role: true
+    }
+  });
+  res.json(user);
+});
+
+app.delete('/api/games/:id', authenticateToken, requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  await prisma.game.delete({
+    where: { id }
+  });
+  res.sendStatus(204);
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Something went wrong!' });
+});
+
+const server = app.listen(port, () => {
   console.log(`Server running on port ${port}`);
+}).on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`Port ${port} is already in use. Please stop the other process or use a different port.`);
+    process.exit(1);
+  } else {
+    console.error('Server error:', err);
+    process.exit(1);
+  }
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received. Shutting down gracefully...');
+  server.close(() => {
+    console.log('Server closed');
+    prisma.$disconnect().then(() => {
+      console.log('Prisma disconnected');
+      process.exit(0);
+    });
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received. Shutting down gracefully...');
+  server.close(() => {
+    console.log('Server closed');
+    prisma.$disconnect().then(() => {
+      console.log('Prisma disconnected');
+      process.exit(0);
+    });
+  });
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  server.close(() => {
+    prisma.$disconnect().then(() => {
+      process.exit(1);
+    });
+  });
 });
