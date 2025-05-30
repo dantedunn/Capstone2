@@ -41,6 +41,7 @@ The application follows a typical client-server architecture:
     │   ├── NavigationBar.js # Navigation component
     │   ├── PrivateRoute.js  # Auth-protected routes
     │   ├── ReviewForm.js    # Review submission form
+    │   ├── SearchResults.js  # Search results page
     │   └── SignUp.js        # Registration page
     ├── context/            # React context providers
     │   └── AuthContext.js  # Authentication context
@@ -114,6 +115,7 @@ The application follows a typical client-server architecture:
 **Features**:
 - Sets up routing for different pages
 - Wraps the application with the authentication provider
+- Handles routing for search results
 
 ### 2. `src/api/api.js`
 
@@ -171,6 +173,7 @@ The application follows a typical client-server architecture:
 - Conditional rendering based on authentication state
 - Admin-specific navigation options
 - Logout functionality
+- Search bar for searching games by name, description, genre, etc.
 
 ### 8. `src/components/ReviewForm.js`
 
@@ -188,6 +191,17 @@ The application follows a typical client-server architecture:
 **Key Features**:
 - Redirects unauthenticated users to login page
 - Preserves attempted access URL for post-login redirect
+
+### 10. `src/components/SearchResults.js`
+
+**Purpose**: Displays search results from the game database.
+
+**Key Features**:
+- Processes search queries from URL parameters
+- Displays matching games in a grid layout
+- Shows loading states and error handling
+- Provides breadcrumb navigation for user orientation
+- Handles "no results found" with helpful suggestions
 
 ## Key Packages and Dependencies
 
