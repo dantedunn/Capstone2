@@ -2,7 +2,34 @@
 
 ## Project Overview
 
-This is a full-stack web application for video game reviews, featuring user authentication, game listings, detailed game information, user reviews, and comments. The application is built with a React frontend and an Express/Node.js backend with PostgreSQL database using Prisma ORM.
+This is a full-stack web application for video game reviews, featuring user authentication, game listings, detailed game information, user reviews, comments, and search functionality. The application is built with a React frontend and an Express/Node.js backend with PostgreSQL database using Prisma ORM.
+
+## Development Setup
+
+### Prerequisites
+- Node.js (v14 or higher)
+- PostgreSQL database
+- npm package manager
+
+### Backend Setup
+1. Navigate to the backend directory: `cd backend`
+2. Install dependencies: `npm install`
+3. Create an `.env` file with the following variables:
+   ```
+   DATABASE_URL="postgresql://username:password@localhost:5432/videogamereview"
+   JWT_SECRET="your-secret-key"
+   PORT=5001
+   ```
+4. Run database migrations: `npx prisma migrate dev`
+5. Generate Prisma client: `npx prisma generate`
+6. Seed the database (optional): `npm run seed`
+7. Start the backend server: `npm run dev`
+
+### Frontend Setup
+1. Navigate to the frontend directory: `cd frontend`
+2. Install dependencies: `npm install`
+3. Start the frontend server: `npm start`
+4. The application will be available at `http://localhost:3000`
 
 ## Architecture
 
@@ -16,41 +43,46 @@ The application follows a typical client-server architecture:
 
 ```
 /
-├── package.json             # Frontend dependencies and scripts
 ├── README.md                # Project documentation
+├── documentation.md         # Detailed technical documentation
 ├── backend/                 # Backend server code
 │   ├── package.json        # Backend dependencies and scripts
 │   ├── server.js           # Express server setup and API endpoints
+│   ├── .env                # Environment variables for the backend
+│   ├── .env.example        # Example environment variables template
 │   └── prisma/             # Database configuration
 │       ├── schema.prisma   # Database schema definition
-│       └── seed.js         # Initial data seeding script
-├── public/                  # Public assets
-│   ├── favicon.ico         # Site favicon
-│   ├── index.html          # HTML entry point
-│   └── placeholder-game.jpg # Default game image
-└── src/                     # Frontend source code
-    ├── App.js              # Main React component
-    ├── config.js           # Frontend configuration
-    ├── index.js            # React entry point
-    ├── api/                # API communication
-    │   └── api.js          # API client functions
-    ├── components/         # React components
-    │   ├── GameDetail.js   # Game details page
-    │   ├── GameList.js     # Game listing page
-    │   ├── Login.js        # Login page
-    │   ├── NavigationBar.js # Navigation component
-    │   ├── PrivateRoute.js  # Auth-protected routes
-    │   ├── ReviewForm.js    # Review submission form
-    │   ├── SearchResults.js  # Search results page
-    │   └── SignUp.js        # Registration page
-    ├── context/            # React context providers
-    │   └── AuthContext.js  # Authentication context
-    └── styles/             # Component styles
-        ├── App.css         # Global styles
-        ├── Auth.css        # Auth form styles
-        ├── GameDetail.css  # Game details page styles
-        ├── GameList.css    # Game listing styles
-        └── ReviewForm.css  # Review form styles
+│       ├── seed.js         # Initial data seeding script
+│       └── migrations/     # Database migration files
+└── frontend/               # Frontend application code
+    ├── package.json        # Frontend dependencies and scripts
+    ├── public/             # Public assets
+    │   ├── favicon.ico     # Site favicon
+    │   ├── index.html      # HTML entry point
+    │   └── placeholder-game.jpg # Default game image
+    └── src/                 # Frontend source code
+        ├── App.js          # Main React component
+        ├── config.js       # Frontend configuration
+        ├── index.js        # React entry point
+        ├── api/            # API communication
+        │   └── api.js      # API client functions
+        ├── components/     # React components
+        │   ├── GameDetail.js   # Game details page
+        │   ├── GameList.js     # Game listing page
+        │   ├── Login.js        # Login page
+        │   ├── NavigationBar.js # Navigation component with search
+        │   ├── PrivateRoute.js  # Auth-protected routes
+        │   ├── ReviewForm.js    # Review submission form
+        │   ├── SearchResults.js # Search results page
+        │   └── SignUp.js        # Registration page
+        ├── context/        # React context providers
+        │   └── AuthContext.js  # Authentication context
+        └── styles/         # Component styles
+            ├── App.css         # Global styles
+            ├── Auth.css        # Auth form styles
+            ├── GameDetail.css  # Game details page styles
+            ├── GameList.css    # Game listing styles
+            └── ReviewForm.css  # Review form styles
 ```
 
 ## Backend Components
@@ -173,7 +205,10 @@ The application follows a typical client-server architecture:
 - Conditional rendering based on authentication state
 - Admin-specific navigation options
 - Logout functionality
-- Search bar for searching games by name, description, genre, etc.
+- Integrated search bar with Material-UI styling
+- Responsive design for different screen sizes
+- Search query handling and URL parameter generation
+- Dynamic search icon that appears when typing
 
 ### 8. `src/components/ReviewForm.js`
 
@@ -193,6 +228,17 @@ The application follows a typical client-server architecture:
 - Preserves attempted access URL for post-login redirect
 
 ### 10. `src/components/SearchResults.js`
+
+**Purpose**: Displays search results from the game database.
+
+**Key Features**:
+- Processes search queries from URL parameters
+- Fetches matching games from the backend API
+- Displays matching games in a responsive grid layout
+- Shows loading states and error handling
+- Provides breadcrumb navigation for user orientation
+- Handles "no results found" with helpful suggestions
+- Allows users to click through to game detail pages
 
 **Purpose**: Displays search results from the game database.
 
@@ -281,7 +327,7 @@ The application follows a typical client-server architecture:
 ### Games
 - `GET /api/games`: Get all games
 - `GET /api/games/:id`: Get a specific game by ID
-- `GET /api/games/search`: Search for games by name
+- `GET /api/games/search?q={query}`: Search for games by name, description, genre, and publisher
 - `POST /api/games`: Add a new game (admin only)
 - `PUT /api/games/:id`: Update a game (admin only)
 - `DELETE /api/games/:id`: Delete a game (admin only)
@@ -317,6 +363,15 @@ The application follows a typical client-server architecture:
 2. Frontend fetches games from the API
 3. Games are displayed in a grid format
 4. User can click on a game for detailed information
+5. User can search for games using the search bar in the navigation
+
+### Search Flow
+1. User enters a search query in the navigation bar
+2. On submission, user is redirected to the search results page
+3. Frontend fetches matching games from the search API endpoint
+4. Results are displayed with appropriate loading and error states
+5. If no results are found, a helpful message is displayed
+6. User can click on any game in the results to view details
 
 ### Game Detail Flow
 1. User clicks on a game in the list
@@ -451,28 +506,153 @@ The system is seeded with two default accounts:
    - Verify authentication headers
    - Look for validation errors in responses
 
+### Common Backend Issues
+
+1. **500 Internal Server Error with Prisma**:
+   - Issue: Field name mismatch between Prisma model and query
+   - Solution: Use JavaScript property names (camelCase) in queries, not database column names (snake_case)
+   - Example: Use `createdAt` instead of `created_at` in `orderBy` clauses
+
+2. **Port Conflicts**:
+   - Issue: Another process is using the designated port
+   - Solution: Kill the process or change the port in .env file
+   - Verification: Check with `lsof -i :5001` to see what's using the port
+
+3. **Missing Dependencies**:
+   - Issue: Runtime errors about missing modules
+   - Solution: Install the required dependencies with `npm install`
+   - Example: `npm install dotenv` if getting "Cannot find module 'dotenv'" error
+
+4. **Database Connection Issues**:
+   - Issue: Prisma can't connect to the database
+   - Solution: Check DATABASE_URL in .env file and ensure database is running
+   - Verification: Use Prisma CLI to test the connection: `npx prisma db pull`
+
+### Common Frontend Issues
+
+1. **"Module not found" Errors**:
+   - Issue: React can't find referenced JavaScript modules
+   - Solution: Ensure file paths and imports are correct
+   - Check: Directory structure should follow React conventions with src folder
+
+2. **Authentication Issues**:
+   - Issue: User can't log in or access protected routes
+   - Solution: Check JWT token creation and storage
+   - Debugging: Check localStorage for token and inspect network requests
+
+3. **API Connection Errors**:
+   - Issue: Frontend can't connect to backend API
+   - Solution: Verify proxy setting in package.json matches backend port
+   - Check: Backend server is running and accessible
+
+4. **Data Rendering Issues**:
+   - Issue: Components not rendering data correctly
+   - Solution: Check data structure and component expectations
+   - Debug: Use React DevTools to inspect component props and state
+
+## Error Handling
+
+### Backend Error Handling
+1. **Try/Catch Blocks**:
+   - All database operations are wrapped in try/catch blocks
+   - Errors are logged to the console for debugging
+   - Appropriate HTTP status codes are returned to the client
+
+2. **Middleware**:
+   - Global error handling middleware catches unhandled errors
+   - Structured error responses with consistent format
+   - Prevents backend crashes from affecting user experience
+
+3. **Database Errors**:
+   - Prisma-specific error handling for database operations
+   - Field name mapping errors are caught and corrected
+   - Unique constraint violations are handled with clear messages
+
+### Frontend Error Handling
+1. **API Response Handling**:
+   - All API calls check for error responses
+   - Error messages are displayed to the user
+   - Loading states prevent interaction during API calls
+
+2. **Form Validation**:
+   - Client-side validation for all form inputs
+   - Clear error messages for validation failures
+   - Prevents submission of invalid data
+
+3. **Component Error States**:
+   - Components handle error states gracefully
+   - Fallback UI for error conditions
+   - User-friendly error messages
+
+## Front-end/Back-end Communication
+
+1. **API Communication**:
+   - RESTful API design principles
+   - Centralized API client in `api.js`
+   - Consistent JSON response format
+
+2. **Authentication Flow**:
+   - JWT token-based authentication
+   - Token stored in localStorage
+   - Automatic inclusion of auth headers in requests
+
+3. **Proxy Configuration**:
+   - Frontend configured to proxy API requests to backend
+   - Eliminates CORS issues during development
+   - Configuration in frontend's `package.json`: `"proxy": "http://localhost:5001"`
+
+4. **Data Transformation**:
+   - Backend handles database to API format transformation
+   - Frontend transforms API data into component-friendly format
+   - Consistent date formatting and numerical values
+
+5. **Error Communication**:
+   - Structured error responses from backend
+   - HTTP status codes for different error types
+   - Error messages propagated to UI components
+
 ## Future Enhancements
 
-1. **Feature Enhancements**:
-   - User profile pages
-   - Advanced search and filtering
-   - Social sharing functionality
-   - Rating analytics and charts
+### Planned Features
 
-2. **Technical Improvements**:
-   - Implement unit and integration tests
-   - Add server-side rendering
-   - Implement caching for better performance
-   - Containerize the application with Docker
+1. **Advanced Search Filters**:
+   - Filter games by rating, release date, platform, etc.
+   - Sorting options for search results
+   - Save favorite searches
 
-3. **UI/UX Improvements**:
-   - Responsive design enhancements
-   - Dark/light theme toggle
-   - Accessibility improvements
-   - Internationalization support
+2. **User Profiles**:
+   - Public user profiles
+   - Avatar images and customization
+   - Activity history and statistics
 
----
+3. **Social Features**:
+   - Follow other users
+   - Like and share reviews
+   - Notification system for replies and mentions
 
-**Documentation Created**: May 24, 2025  
-**Project**: Video Game Review Site  
-**Author**: Dante Dunn
+4. **Enhanced Admin Dashboard**:
+   - Content moderation tools
+   - Analytics and reporting
+   - Bulk operations for games and users
+
+5. **Performance Optimizations**:
+   - Implement pagination for large data sets
+   - Add caching for frequently accessed data
+   - Code splitting for faster initial load
+
+### Technical Improvements
+
+1. **Testing**:
+   - Unit tests for components and API endpoints
+   - Integration tests for critical user flows
+   - End-to-end testing with Cypress
+
+2. **Code Structure**:
+   - Move to TypeScript for better type safety
+   - Implement state management with Redux or Context API
+   - Modularize components further for reusability
+
+3. **DevOps**:
+   - CI/CD pipeline setup
+   - Docker containerization
+   - Automated testing before deployment
