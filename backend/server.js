@@ -223,15 +223,14 @@ app.get('/api/reviews', authenticateToken, async (req, res) => {
                 username: true
               }
             }
-          },
-          orderBy: {
-            created_at: 'desc'
-          }
+          },        orderBy: {
+          createdAt: 'desc'
         }
-      },
-      orderBy: {
-        created_at: 'desc'
       }
+    },
+    orderBy: {
+      createdAt: 'desc'
+    }
     });
     res.json(reviews);
   } catch (error) {
@@ -260,12 +259,12 @@ app.get('/api/games/:id/reviews', async (req, res) => {
           }
         },
         orderBy: {
-          created_at: 'desc'
+          createdAt: 'desc'
         }
       }
     },
     orderBy: {
-      created_at: 'desc'
+      createdAt: 'desc'
     }
   });
   res.json(reviews);
