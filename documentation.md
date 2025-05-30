@@ -117,6 +117,7 @@ The application follows a typical client-server architecture:
 - Wraps the application with the authentication provider
 - Handles routing for search results
 
+
 ### 2. `src/api/api.js`
 
 **Purpose**: Centralizes API communication between frontend and backend.
@@ -192,6 +193,7 @@ The application follows a typical client-server architecture:
 - Redirects unauthenticated users to login page
 - Preserves attempted access URL for post-login redirect
 
+
 ### 10. `src/components/SearchResults.js`
 
 **Purpose**: Displays search results from the game database.
@@ -202,6 +204,7 @@ The application follows a typical client-server architecture:
 - Shows loading states and error handling
 - Provides breadcrumb navigation for user orientation
 - Handles "no results found" with helpful suggestions
+
 
 ## Key Packages and Dependencies
 
