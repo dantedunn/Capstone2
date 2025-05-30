@@ -113,15 +113,52 @@ app.get('/api/games/:id', async (req, res) => {
 
 app.get('/api/games/search', async (req, res) => {
   const { q } = req.query;
-  const games = await prisma.game.findMany({
-    where: {
-      name: {
-        contains: q.toLowerCase(),
-        mode: 'insensitive'
+  
+  if (!q || q.trim() === '') {
+    return res.json([]);
+  }
+  
+  const searchTerm = q.trim();
+  
+  try {
+    const games = await prisma.game.findMany({
+      where: {
+        OR: [
+          {
+            name: {
+              contains: searchTerm,
+              mode: 'insensitive'
+            }
+          },
+          {
+            description: {
+              contains: searchTerm,
+              mode: 'insensitive'
+            }
+          },
+          {
+            genre: {
+              contains: searchTerm,
+              mode: 'insensitive'
+            }
+          },
+          {
+            publisher: {
+              contains: searchTerm,
+              mode: 'insensitive'
+            }
+          }
+        ]
+      },
+      orderBy: {
+        name: 'asc'
       }
-    }
-  });
-  res.json(games);
+    });
+    res.json(games);
+  } catch (error) {
+    console.error('Search error:', error);
+    res.status(500).json({ error: 'An error occurred while searching for games' });
+  }
 });
 
 app.post('/api/games', authenticateToken, requireAdmin, async (req, res) => {
@@ -174,19 +211,19 @@ app.delete('/api/games/:id', authenticateToken, requireAdmin, async (req, res) =
 
 // Reviews endpoints
 app.get('/api/reviews', authenticateToken, async (req, res) => {
-  const reviews = await prisma.review.findMany({
-    where: { userId: req.user.id },
-    include: {
-      game: true,
-      comments: {
-        include: {
-          user: {
-            select: {
-              username: true
+  try {
+    const reviews = await prisma.review.findMany({
+      where: { userId: req.user.id },
+      include: {
+        game: true,
+        comments: {
+          include: {
+            user: {
+              select: {
+                username: true
+              }
             }
-          }
-        },
-        orderBy: {
+          },        orderBy: {
           createdAt: 'desc'
         }
       }
@@ -194,20 +231,25 @@ app.get('/api/reviews', authenticateToken, async (req, res) => {
     orderBy: {
       createdAt: 'desc'
     }
-  });
-  res.json(reviews);
+    });
+    res.json(reviews);
+  } catch (error) {
+    console.error('Error fetching user reviews:', error);
+    res.status(500).json({ error: 'Failed to fetch reviews', message: error.message });
+  }
 });
 
 app.get('/api/games/:id/reviews', async (req, res) => {
-  const { id } = req.params;
-  const reviews = await prisma.review.findMany({
-    where: { gameId: id },
-    include: {
-      user: {
-        select: {
-          username: true
-        }
-      },
+  try {
+    const { id } = req.params;
+    const reviews = await prisma.review.findMany({
+      where: { gameId: id },
+      include: {
+        user: {
+          select: {
+            username: true
+          }
+        },
       comments: {
         include: {
           user: {
@@ -226,6 +268,10 @@ app.get('/api/games/:id/reviews', async (req, res) => {
     }
   });
   res.json(reviews);
+  } catch (error) {
+    console.error('Error fetching reviews:', error);
+    res.status(500).json({ error: 'Failed to fetch reviews', message: error.message });
+  }
 });
 
 app.post('/api/games/:id/reviews', authenticateToken, async (req, res) => {

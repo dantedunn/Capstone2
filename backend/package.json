@@ -7,8 +7,8 @@
     "seed": "node prisma/seed.js"
   },
   "scripts": {
-    "start": "PORT=5002 node server.js",
-    "dev": "PORT=5002 nodemon server.js"
+    "start": "PORT=5001 node server.js",
+    "dev": "PORT=5001 nodemon server.js"
   },
   "dependencies": {
     "@prisma/client": "^5.4.2",
