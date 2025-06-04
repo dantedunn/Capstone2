@@ -13,3 +13,17 @@
   padding: 1rem;
   margin-bottom: 1rem;
 }
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.edit-form textarea {
+  width: 100%;
+  min-height: 80px;
+}
+
+.review-actions button {
+  margin-right: 0.5rem;
+}

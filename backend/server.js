@@ -38,8 +38,10 @@ function authenticateToken(req, res, next) {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
   if (!token) return res.sendStatus(401);
-  jwt.verify(token, JWT_SECRET, (err, user) => {
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
     if (err) return res.sendStatus(403);
+    console.log("Decoded JWT user:", user); // ✅ Add this line
     req.user = user;
     next();
   });
@@ -288,14 +290,35 @@ app.post("/api/games/:id/reviews", authenticateToken, async (req, res) => {
 app.put("/api/reviews/:id", authenticateToken, async (req, res) => {
   const { id } = req.params;
   const { content, rating } = req.body;
+
   try {
-    const review = await prisma.review.update({
-      where: { id_userId: { id, userId: req.user.id } },
+    const review = await prisma.review.findUnique({
+      where: { id },
+    });
+
+    if (!review) {
+      console.log("Review not found");
+      return res.status(404).json({ error: "Review not found" });
+    }
+
+    // ✅ Use review.userId (camelCase)
+    console.log("DB review.userId:", review.userId);
+    console.log("Token user id (req.user.id):", req.user.id);
+
+    if (review.userId !== req.user.id) {
+      console.log("User mismatch, returning 403");
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    const updatedReview = await prisma.review.update({
+      where: { id },
       data: { content, rating },
     });
-    res.json(review);
-  } catch (e) {
-    res.sendStatus(403);
+
+    res.json(updatedReview);
+  } catch (error) {
+    console.error("Error updating review:", error);
+    res.sendStatus(500);
   }
 });
 
@@ -366,17 +389,40 @@ app.post(
 app.put("/api/comments/:id", authenticateToken, async (req, res) => {
   const { id } = req.params;
   const { content } = req.body;
+
   try {
-    const comment = await prisma.comment.update({
-      where: { id, userId: req.user.id },
+    // 1️⃣ Fetch the comment
+    const comment = await prisma.comment.findUnique({
+      where: { id },
+    });
+
+    if (!comment) {
+      console.log("Comment not found");
+      return res.status(404).json({ error: "Comment not found" });
+    }
+
+    console.log("DB comment.userId:", comment.userId);
+    console.log("Token user id (req.user.id):", req.user.id);
+
+    // 2️⃣ Check ownership
+    if (comment.userId !== req.user.id) {
+      console.log("User mismatch, returning 403");
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    // 3️⃣ Update the comment
+    const updatedComment = await prisma.comment.update({
+      where: { id },
       data: { content },
       include: {
         user: { select: { username: true } },
       },
     });
-    res.json(comment);
+
+    res.json(updatedComment);
   } catch (e) {
-    res.sendStatus(403);
+    console.error("Error updating comment:", e);
+    res.sendStatus(500);
   }
 });
 
