@@ -102,15 +102,8 @@ app.get('/api/games', async (req, res) => {
   res.json(games);
 });
 
-app.get('/api/games/:id', async (req, res) => {
-  const { id } = req.params;
-  const game = await prisma.game.findUnique({
-    where: { id }
-  });
-  if (!game) return res.sendStatus(404);
-  res.json(game);
-});
-
+// Important: The search route must come before the :id route
+// because Express processes routes in order
 app.get('/api/games/search', async (req, res) => {
   const { q } = req.query;
   
@@ -159,6 +152,16 @@ app.get('/api/games/search', async (req, res) => {
     console.error('Search error:', error);
     res.status(500).json({ error: 'An error occurred while searching for games' });
   }
+});
+
+// Route for fetching a single game by ID - must come after /search route
+app.get('/api/games/:id', async (req, res) => {
+  const { id } = req.params;
+  const game = await prisma.game.findUnique({
+    where: { id }
+  });
+  if (!game) return res.sendStatus(404);
+  res.json(game);
 });
 
 app.post('/api/games', authenticateToken, requireAdmin, async (req, res) => {
