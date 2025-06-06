@@ -152,7 +152,7 @@ const Profile = () => {
                     <strong>Game:</strong> {review.game?.name || "Unknown Game"}
                   </p>
                   <p>
-                    <strong>Rating:</strong> {review.rating}/100
+                    <strong>Rating:</strong> {review.rating}/5
                   </p>
                   <p>
                     <strong>Review:</strong> {review.content}

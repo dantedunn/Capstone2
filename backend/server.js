@@ -41,7 +41,6 @@ function authenticateToken(req, res, next) {
 
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
     if (err) return res.sendStatus(403);
-    console.log("Decoded JWT user:", user); // ✅ Add this line
     req.user = user;
     next();
   });
@@ -292,18 +291,16 @@ app.put("/api/reviews/:id", authenticateToken, async (req, res) => {
   const { content, rating } = req.body;
 
   try {
-    const review = await prisma.review.findUnique({
-      where: { id },
-    });
-
+    const review = await prisma.review.findUnique({ where: { id } });
     if (!review) {
       console.log("Review not found");
       return res.status(404).json({ error: "Review not found" });
     }
 
-    // ✅ Use review.userId (camelCase)
+    console.log("Incoming PUT /api/reviews/:id request:");
+    console.log("req.body:", req.body);
+    console.log("req.user.id:", req.user.id);
     console.log("DB review.userId:", review.userId);
-    console.log("Token user id (req.user.id):", req.user.id);
 
     if (review.userId !== req.user.id) {
       console.log("User mismatch, returning 403");
@@ -312,7 +309,7 @@ app.put("/api/reviews/:id", authenticateToken, async (req, res) => {
 
     const updatedReview = await prisma.review.update({
       where: { id },
-      data: { content, rating },
+      data: { content, rating: Number(rating) }, // Make sure rating is a number
     });
 
     res.json(updatedReview);
@@ -322,15 +319,29 @@ app.put("/api/reviews/:id", authenticateToken, async (req, res) => {
   }
 });
 
+/* DELETE REVIEW */
 app.delete("/api/reviews/:id", authenticateToken, async (req, res) => {
   const { id } = req.params;
   try {
-    await prisma.review.delete({
-      where: { id_userId: { id, userId: req.user.id } },
-    });
+    const review = await prisma.review.findUnique({ where: { id } });
+    if (!review) {
+      console.log("Review not found");
+      return res.status(404).json({ error: "Review not found" });
+    }
+
+    console.log("DB review.userId:", review.userId);
+    console.log("Token user id (req.user.id):", req.user.id);
+
+    if (review.userId !== req.user.id) {
+      console.log("User mismatch, returning 403");
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    await prisma.review.delete({ where: { id } });
     res.sendStatus(204);
   } catch (e) {
-    res.sendStatus(403);
+    console.error("Error deleting review:", e);
+    res.sendStatus(500);
   }
 });
 
@@ -391,11 +402,39 @@ app.put("/api/comments/:id", authenticateToken, async (req, res) => {
   const { content } = req.body;
 
   try {
-    // 1️⃣ Fetch the comment
-    const comment = await prisma.comment.findUnique({
+    const comment = await prisma.comment.findUnique({ where: { id } });
+    if (!comment) {
+      console.log("Comment not found");
+      return res.status(404).json({ error: "Comment not found" });
+    }
+
+    console.log("Incoming PUT /api/comments/:id request:");
+    console.log("req.body:", req.body);
+    console.log("req.user.id:", req.user.id);
+    console.log("DB comment.userId:", comment.userId);
+
+    if (comment.userId !== req.user.id) {
+      console.log("User mismatch, returning 403");
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    const updatedComment = await prisma.comment.update({
       where: { id },
+      data: { content },
     });
 
+    res.json(updatedComment);
+  } catch (error) {
+    console.error("Error updating comment:", error);
+    res.sendStatus(500);
+  }
+});
+
+/* DELETE COMMENT */
+app.delete("/api/comments/:id", authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const comment = await prisma.comment.findUnique({ where: { id } });
     if (!comment) {
       console.log("Comment not found");
       return res.status(404).json({ error: "Comment not found" });
@@ -404,37 +443,16 @@ app.put("/api/comments/:id", authenticateToken, async (req, res) => {
     console.log("DB comment.userId:", comment.userId);
     console.log("Token user id (req.user.id):", req.user.id);
 
-    // 2️⃣ Check ownership
     if (comment.userId !== req.user.id) {
       console.log("User mismatch, returning 403");
       return res.status(403).json({ error: "Forbidden" });
     }
 
-    // 3️⃣ Update the comment
-    const updatedComment = await prisma.comment.update({
-      where: { id },
-      data: { content },
-      include: {
-        user: { select: { username: true } },
-      },
-    });
-
-    res.json(updatedComment);
-  } catch (e) {
-    console.error("Error updating comment:", e);
-    res.sendStatus(500);
-  }
-});
-
-app.delete("/api/comments/:id", authenticateToken, async (req, res) => {
-  const { id } = req.params;
-  try {
-    await prisma.comment.delete({
-      where: { id, userId: req.user.id },
-    });
+    await prisma.comment.delete({ where: { id } });
     res.sendStatus(204);
   } catch (e) {
-    res.sendStatus(403);
+    console.error("Error deleting comment:", e);
+    res.sendStatus(500);
   }
 });
 
