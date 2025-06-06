@@ -223,6 +223,8 @@ export async function searchGames(query) {
   );
   return handleResponse(response);
 }
+
+// Additional helper functions from OscarsBranch
 export const fetchUserReviews = async () => {
   const token = localStorage.getItem("token");
   const res = await fetch("/api/reviews", {

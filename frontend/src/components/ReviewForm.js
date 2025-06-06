@@ -20,7 +20,7 @@ function ReviewForm({ onSubmit, initialData, loading, error }) {
     if (!validateReview()) return;
 
     try {
-      await onSubmit({ content, rating: Number(rating) }); // ✅ parse rating as number
+      await onSubmit({ content, rating: Number(rating) }); // Ensures rating is a number
       if (!initialData) {
         setContent("");
         setRating(5);
