@@ -55,7 +55,7 @@ const GameDetail = () => {
     if (!newComments[reviewId]) return;
 
     try {
-      const comment = await createComment(reviewId, newComments[reviewId]); // ✅ Pass string directly
+      const comment = await createComment(reviewId, newComments[reviewId]);
       setReviews((prevReviews) =>
         prevReviews.map((review) =>
           review.id === reviewId

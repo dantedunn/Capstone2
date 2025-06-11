@@ -8,8 +8,7 @@ import ReviewForm from "./components/ReviewForm";
 import Login from "./components/Login";
 import SignUp from "./components/SignUp";
 import SearchResults from "./components/SearchResults";
-import PrivateRoute from "./components/PrivateRoute";
-import Profile from "./components/Profile";
+import Profile from "./components/Profile"; // Keep this import
 import { fetchGameData } from "./api/api";
 import "./styles/App.css";
 
@@ -36,7 +35,7 @@ function App() {
             <Route path="/game/:id" component={GameDetail} />
             <Route path="/review" component={ReviewForm} />
             <Route path="/search" component={SearchResults} />
-            <Route path="/profile" component={Profile} />
+            <Route path="/profile" component={Profile} /> {/* Keep this route */}
           </Switch>
         </div>
       </Router>

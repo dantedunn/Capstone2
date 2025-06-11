@@ -121,6 +121,7 @@
   text-align: right;
   margin: 0;
 }
+
 .comment-form {
   margin-top: 0.5rem;
   display: flex;
@@ -129,7 +130,7 @@
 }
 
 .comment-form input[type="text"] {
-  flex: 3; /* Makes the comment box larger horizontally */
+  flex: 3;
   padding: 0.75rem;
   font-size: 1rem;
   border: 1px solid #ccc;
@@ -137,7 +138,7 @@
 }
 
 .comment-form button {
-  flex: 1; /* Makes the submit button smaller relative to the text box */
+  flex: 1;
   padding: 0.5rem;
   font-size: 0.9rem;
   background-color: #007bff;
