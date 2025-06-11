@@ -106,16 +106,9 @@ app.get("/api/games", async (req, res) => {
   res.json(games);
 });
 
-app.get("/api/games/:id", async (req, res) => {
-  const { id } = req.params;
-  const game = await prisma.game.findUnique({
-    where: { id },
-  });
-  if (!game) return res.sendStatus(404);
-  res.json(game);
-});
-
-app.get("/api/games/search", async (req, res) => {
+// Important: The search route must come before the :id route
+// because Express processes routes in order
+app.get('/api/games/search', async (req, res) => {
   const { q } = req.query;
   if (!q || q.trim() === "") {
     return res.json([]);
@@ -142,19 +135,18 @@ app.get("/api/games/search", async (req, res) => {
   }
 });
 
-app.post("/api/games", authenticateToken, requireAdmin, async (req, res) => {
-  const {
-    name,
-    description,
-    genre,
-    platform,
-    publisher,
-    game_mode,
-    theme,
-    release_date,
-    average_rating,
-    image_url,
-  } = req.body;
+// Route for fetching a single game by ID - must come after /search route
+app.get('/api/games/:id', async (req, res) => {
+  const { id } = req.params;
+  const game = await prisma.game.findUnique({
+    where: { id }
+  });
+  if (!game) return res.sendStatus(404);
+  res.json(game);
+});
+
+app.post('/api/games', authenticateToken, requireAdmin, async (req, res) => {
+  const { name, description, genre, platform, publisher, game_mode, theme, release_date, average_rating, image_url } = req.body;
   const game = await prisma.game.create({
     data: {
       name,
