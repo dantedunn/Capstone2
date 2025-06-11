@@ -1,4 +1,3 @@
-// Helper function for handling API responses
 async function handleResponse(response) {
   if (!response.ok) {
     const text = await response.text();
@@ -26,23 +25,21 @@ const getAuthHeaders = () => {
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
+// API base URL
+const API_BASE_URL = process.env.REACT_APP_API_URL;
+
 // Fetch all games
 export async function fetchGameData() {
-  try {
-    const response = await fetch("/api/games", {
-      method: "GET",
-      headers: jsonHeaders,
-    });
-    return await handleResponse(response);
-  } catch (error) {
-    console.error("Failed to fetch games:", error);
-    throw error;
-  }
+  const response = await fetch(`${API_BASE_URL}/api/games`, {
+    method: "GET",
+    headers: jsonHeaders,
+  });
+  return handleResponse(response);
 }
 
 // Fetch a single game by ID
 export async function fetchGameById(id) {
-  const response = await fetch(`/api/games/${id}`, {
+  const response = await fetch(`${API_BASE_URL}/api/games/${id}`, {
     headers: jsonHeaders,
   });
   return handleResponse(response);
@@ -50,7 +47,7 @@ export async function fetchGameById(id) {
 
 // Fetch reviews for a game
 export async function fetchReviewsForGame(id) {
-  const response = await fetch(`/api/games/${id}/reviews`, {
+  const response = await fetch(`${API_BASE_URL}/api/games/${id}/reviews`, {
     headers: jsonHeaders,
   });
   return handleResponse(response);
@@ -58,7 +55,7 @@ export async function fetchReviewsForGame(id) {
 
 // Login
 export async function loginUser(username, password) {
-  const response = await fetch("/api/auth/login", {
+  const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
     method: "POST",
     headers: jsonHeaders,
     body: JSON.stringify({ username, password }),
@@ -68,7 +65,7 @@ export async function loginUser(username, password) {
 
 // Signup
 export async function signupUser(username, email, password) {
-  const response = await fetch("/api/auth/signup", {
+  const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
     method: "POST",
     headers: jsonHeaders,
     body: JSON.stringify({ username, email, password }),
@@ -78,7 +75,7 @@ export async function signupUser(username, email, password) {
 
 // User reviews
 export async function getUserReviews() {
-  const response = await fetch("/api/reviews", {
+  const response = await fetch(`${API_BASE_URL}/api/reviews`, {
     headers: { ...jsonHeaders, ...getAuthHeaders() },
   });
   return handleResponse(response);
@@ -86,7 +83,7 @@ export async function getUserReviews() {
 
 // User comments
 export async function getUserComments() {
-  const response = await fetch("/api/comments", {
+  const response = await fetch(`${API_BASE_URL}/api/comments`, {
     headers: { ...jsonHeaders, ...getAuthHeaders() },
   });
   return handleResponse(response);
@@ -94,7 +91,7 @@ export async function getUserComments() {
 
 // Admin: all games
 export async function getAllGames() {
-  const response = await fetch("/api/games", {
+  const response = await fetch(`${API_BASE_URL}/api/games`, {
     headers: { ...jsonHeaders, ...getAuthHeaders() },
   });
   return handleResponse(response);
@@ -102,7 +99,7 @@ export async function getAllGames() {
 
 // Admin: all users
 export async function getAllUsers() {
-  const response = await fetch("/api/admin/users", {
+  const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
     headers: { ...jsonHeaders, ...getAuthHeaders() },
   });
   return handleResponse(response);
@@ -110,7 +107,7 @@ export async function getAllUsers() {
 
 // Update user role (admin only)
 export async function updateUserRole(userId, role) {
-  const response = await fetch(`/api/admin/users/${userId}`, {
+  const response = await fetch(`${API_BASE_URL}/api/admin/users/${userId}`, {
     method: "PUT",
     headers: { ...jsonHeaders, ...getAuthHeaders() },
     body: JSON.stringify({ role }),
@@ -120,7 +117,7 @@ export async function updateUserRole(userId, role) {
 
 // Create a new game (admin only)
 export async function createGame(gameData) {
-  const response = await fetch("/api/games", {
+  const response = await fetch(`${API_BASE_URL}/api/games`, {
     method: "POST",
     headers: { ...jsonHeaders, ...getAuthHeaders() },
     body: JSON.stringify(gameData),
@@ -130,7 +127,7 @@ export async function createGame(gameData) {
 
 // Update a game (admin only)
 export async function updateGame(gameId, gameData) {
-  const response = await fetch(`/api/games/${gameId}`, {
+  const response = await fetch(`${API_BASE_URL}/api/games/${gameId}`, {
     method: "PUT",
     headers: { ...jsonHeaders, ...getAuthHeaders() },
     body: JSON.stringify(gameData),
@@ -140,7 +137,7 @@ export async function updateGame(gameId, gameData) {
 
 // Delete a game (admin only)
 export async function deleteGame(gameId) {
-  const response = await fetch(`/api/games/${gameId}`, {
+  const response = await fetch(`${API_BASE_URL}/api/games/${gameId}`, {
     method: "DELETE",
     headers: { ...jsonHeaders, ...getAuthHeaders() },
   });
@@ -149,7 +146,7 @@ export async function deleteGame(gameId) {
 
 // Create a review
 export async function createReview(gameId, reviewData) {
-  const response = await fetch(`/api/games/${gameId}/reviews`, {
+  const response = await fetch(`${API_BASE_URL}/api/games/${gameId}/reviews`, {
     method: "POST",
     headers: { ...jsonHeaders, ...getAuthHeaders() },
     body: JSON.stringify(reviewData),
@@ -159,7 +156,7 @@ export async function createReview(gameId, reviewData) {
 
 // Update a review
 export async function updateReview(reviewId, reviewData) {
-  const response = await fetch(`/api/reviews/${reviewId}`, {
+  const response = await fetch(`${API_BASE_URL}/api/reviews/${reviewId}`, {
     method: "PUT",
     headers: { ...jsonHeaders, ...getAuthHeaders() },
     body: JSON.stringify(reviewData),
@@ -169,7 +166,7 @@ export async function updateReview(reviewId, reviewData) {
 
 // Delete a review
 export async function deleteReview(reviewId) {
-  const response = await fetch(`/api/reviews/${reviewId}`, {
+  const response = await fetch(`${API_BASE_URL}/api/reviews/${reviewId}`, {
     method: "DELETE",
     headers: { ...jsonHeaders, ...getAuthHeaders() },
   });
@@ -178,25 +175,31 @@ export async function deleteReview(reviewId) {
 
 // Get comments for a review
 export async function getReviewComments(reviewId) {
-  const response = await fetch(`/api/reviews/${reviewId}/comments`, {
-    headers: jsonHeaders,
-  });
+  const response = await fetch(
+    `${API_BASE_URL}/api/reviews/${reviewId}/comments`,
+    {
+      headers: jsonHeaders,
+    }
+  );
   return handleResponse(response);
 }
 
 // Create a comment
 export async function createComment(reviewId, content) {
-  const response = await fetch(`/api/reviews/${reviewId}/comments`, {
-    method: "POST",
-    headers: { ...jsonHeaders, ...getAuthHeaders() },
-    body: JSON.stringify({ content }),
-  });
+  const response = await fetch(
+    `${API_BASE_URL}/api/reviews/${reviewId}/comments`,
+    {
+      method: "POST",
+      headers: { ...jsonHeaders, ...getAuthHeaders() },
+      body: JSON.stringify({ content }),
+    }
+  );
   return handleResponse(response);
 }
 
 // Update a comment
 export async function updateComment(commentId, content) {
-  const response = await fetch(`/api/comments/${commentId}`, {
+  const response = await fetch(`${API_BASE_URL}/api/comments/${commentId}`, {
     method: "PUT",
     headers: { ...jsonHeaders, ...getAuthHeaders() },
     body: JSON.stringify({ content }),
@@ -206,7 +209,7 @@ export async function updateComment(commentId, content) {
 
 // Delete a comment
 export async function deleteComment(commentId) {
-  const response = await fetch(`/api/comments/${commentId}`, {
+  const response = await fetch(`${API_BASE_URL}/api/comments/${commentId}`, {
     method: "DELETE",
     headers: { ...jsonHeaders, ...getAuthHeaders() },
   });
@@ -216,16 +219,18 @@ export async function deleteComment(commentId) {
 // Search games
 export async function searchGames(query) {
   const response = await fetch(
-    `/api/games/search?q=${encodeURIComponent(query)}`,
+    `${API_BASE_URL}/api/games/search?q=${encodeURIComponent(query)}`,
     {
       headers: jsonHeaders,
     }
   );
   return handleResponse(response);
 }
+
+// Additional helper functions from OscarsBranch
 export const fetchUserReviews = async () => {
   const token = localStorage.getItem("token");
-  const res = await fetch("/api/reviews", {
+  const res = await fetch(`${API_BASE_URL}/api/reviews`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) throw new Error("Failed to fetch user reviews");
@@ -234,7 +239,7 @@ export const fetchUserReviews = async () => {
 
 export const fetchUserComments = async () => {
   const token = localStorage.getItem("token");
-  const res = await fetch("/api/comments", {
+  const res = await fetch(`${API_BASE_URL}/api/comments`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) throw new Error("Failed to fetch user comments");
