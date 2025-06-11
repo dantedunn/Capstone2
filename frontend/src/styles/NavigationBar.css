@@ -1,0 +1,43 @@
+.navbar {
+  background-color: #333;
+  color: white;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.navbar__title a {
+  color: white;
+  text-decoration: none;
+  font-size: 1.5rem;
+}
+
+.navbar__links {
+  display: flex;
+  align-items: center;
+}
+
+.navbar__welcome {
+  margin-right: 1rem;
+}
+
+.navbar__link {
+  color: white;
+  text-decoration: none;
+  margin-left: 1rem;
+}
+
+.navbar__link:hover,
+.navbar__button:hover {
+  text-decoration: underline;
+}
+
+.navbar__button {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 1rem;
+  margin-left: 1rem;
+}

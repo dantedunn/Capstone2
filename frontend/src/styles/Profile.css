@@ -1,0 +1,29 @@
+.profile-container {
+  padding: 2rem;
+}
+
+.profile-section {
+  margin-bottom: 2rem;
+}
+
+.review-card,
+.comment-card {
+  background: #f9f9f9;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.edit-form textarea {
+  width: 100%;
+  min-height: 80px;
+}
+
+.review-actions button {
+  margin-right: 0.5rem;
+}
