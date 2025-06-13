@@ -1,5 +1,9 @@
 # Video Game Review Site
 
+Link to the live site:
+https://capstone2-572c.onrender.com/
+
+
 This project is a full-stack application that serves as a video game review website. It allows users to browse video games, view detailed information about each game, submit reviews, and search for games.
 
 ## Features
